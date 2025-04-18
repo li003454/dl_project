@@ -1,0 +1,24 @@
+torch
+torchvision
+
+# Hugging Face Libraries
+diffusers
+transformers
+accelerate
+
+# Computer Vision & Numerics
+opencv-python
+numpy
+matplotlib
+pandas
+
+# Evaluation
+scikit-learn
+piq
+
+# Kaggle Interaction
+kagglehub
+
+# Optional (Consider adding if needed for specific models/tasks)
+facenet-pytorch  # For FaceNet face recognition
+# timm             # For using various vision models (like EfficientNet) 
