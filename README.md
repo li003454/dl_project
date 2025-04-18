@@ -4,37 +4,45 @@ This repository contains the implementation for the CSCI 5527 project: "Diffusio
 
 ## Goal
 
-The primary goal is to develop and evaluate a method to add imperceptible perturbations to images, particularly medical dermatology images, which achieve the following simultaneously:
+The primary goal is to develop and evaluate a method to add imperceptible perturbations to images, particularly CelebA face images, which achieve the following simultaneously:
 
 1.  **Biometric Anonymization**: Degrade or prevent face detection and recognition.
 2.  **Semantic Editing Resistance**: Resist unwanted edits by text-to-image diffusion models (e.g., InstructPix2Pix).
-3.  **Diagnostic Feature Preservation**: Maintain the essential features needed for medical diagnosis (e.g., skin disease classification).
+3.  **Feature Preservation**: Maintain essential facial attributes (e.g., `Smiling`, `Male`, `Eyeglasses`) or overall image quality.
 
 ## Approach
 
-We plan to implement a unified optimization pipeline (based on Projected Gradient Descent - PGD) that combines objectives targeting face recognition models and diffusion model editing mechanisms, constrained by feature preservation and perturbation imperceptibility.
+We aim to implement a unified optimization pipeline (likely based on Projected Gradient Descent - PGD). This pipeline will generate subtle perturbations by optimizing a loss function that combines objectives for biometric anonymization (attacking face recognition models) and semantic editing resistance (disrupting diffusion editing models), while being constrained to preserve key facial attributes and maintain visual quality.
 
-## Current Progress & Implementation Details (Phase 1)
+## Current Progress & Implementation Details (Phase 1 - Part 1: Foundations)
 
--   **Environment Setup**:
-    -   Initialized a Python virtual environment (`venv`).
-    -   Installed core dependencies via `pip install -r requirements.txt`, including `torch`, `torchvision`, `diffusers`, `transformers`, `opencv-python`, `pandas`, `piq`, `facenet-pytorch`, and `kagglehub`.
--   **Dataset Acquisition & Preparation**:
-    -   Switched dataset direction to CelebA due to the need for facial images.
-    -   Downloaded the CelebA dataset (`google/celeba`) using `kagglehub` via `scripts/download_celeba.py` into `data/raw/celeba-dataset/archive/`.
-    -   Created a PyTorch Dataset loader (`data/celeba_dataset.py`) capable of:
-        -   Parsing CelebA's CSV annotation files (`list_eval_partition.csv`, `list_attr_celeba.csv`).
-        -   Loading images from the nested `img_align_celeba/img_align_celeba/` directory.
-        -   Partitioning data into train/validation/test sets.
-        -   Loading selected facial attributes.
-        -   Applying standard image transformations.
--   **Baseline Model Integration**:
-    -   **Face Detection/Recognition**: Implemented `models/face_recognition/facenet_wrapper.py` using `facenet-pytorch`. This wrapper loads a pre-trained MTCNN for detection and InceptionResnetV1 (VGGFace2 weights) for extracting 512-d face embeddings. Includes methods for detection, extraction, and distance calculation. Tested successfully.
-    -   **Image Editing Model**: Implemented `models/diffusion/instruct_pix2pix_wrapper.py` using `diffusers`. This wrapper loads the `timbrooks/instruct-pix2pix` pipeline and provides a method to apply text-based edits to images. Tested successfully, saving example outputs.
+We have successfully laid the groundwork for the project:
+
+-   **Environment Setup**: 
+    -   **What**: Created a Python `venv` and installed core libraries (`torch`, `diffusers`, `facenet-pytorch`, `pandas`, `piq`, etc.) via `requirements.txt`.
+    -   **Significance**: Ensures a consistent and reproducible development environment with all necessary tools available.
+-   **Dataset Acquisition & Preparation**: 
+    -   **What**: Switched to the CelebA dataset, downloaded it using `kagglehub` (`scripts/download_celeba.py`), and implemented a PyTorch `Dataset` loader (`data/celeba_dataset.py`) for images and attributes.
+    -   **Significance**: Provides the essential data source (images with faces and attributes) and the mechanism to efficiently load and preprocess it for experiments.
+-   **Baseline Model 1 - Face Recognition (`models/face_recognition/facenet_wrapper.py`)**: 
+    -   **What**: Integrated the FaceNet model (MTCNN for detection, InceptionResnetV1 for embeddings).
+    -   **Significance**: This model serves two roles: 
+        1.  It's a primary **target** for our biometric anonymization goal (we want our perturbations to fool this model).
+        2.  It's a crucial **evaluation tool** to measure how well our protection methods actually anonymize faces.
+-   **Baseline Model 2 - Image Editing (`models/diffusion/instruct_pix2pix_wrapper.py`)**: 
+    -   **What**: Integrated the InstructPix2Pix model for text-guided image editing.
+    -   **Significance**: This model also serves two roles:
+        1.  It's the **target** for our semantic editing resistance goal (we want perturbations to disrupt its editing ability).
+        2.  It's the **evaluation tool** to measure how resistant our protected images are to unwanted edits.
+-   **Version Control**: 
+    -   **What**: Initialized Git, configured `.gitignore`, and pushed the initial codebase to GitHub.
+    -   **Significance**: Ensures code safety, tracks changes, and facilitates collaboration.
+
+*In summary, the project infrastructure is set up, data is accessible, and the core "adversary" models (for both biometric and semantic attacks) are integrated and ready for use as attack targets and evaluation benchmarks.* 
 
 ## Project Structure
 
-A high-level overview of the intended project structure:
+A high-level overview of the current project structure:
 
 ```
 diffusion_immunity/
@@ -57,18 +65,25 @@ diffusion_immunity/
 ```
 *(Structure will evolve as project progresses)*
 
-## Next Steps (Completing Phase 1)
+## Next Steps (Completing Phase 1 & Moving to Phase 2)
+
+The immediate next steps focus on completing the baseline setup before developing the core protection methods:
 
 1.  **Integrate Baseline Model 3 (Face Attribute Classifier)**:
-    -   Decide on specific attributes from CelebA to preserve (e.g., `Smiling`, `Male`, `Eyeglasses`, `Young`).
-    -   Find a suitable pre-trained multi-attribute classifier OR train a simple baseline classifier (e.g., using ResNet on top of the loaded CelebA data and selected attributes from `list_attr_celeba.csv`).
-    -   Create a wrapper script similar to the others (e.g., `models/attribute_classifier/classifier_wrapper.py`).
-2.  **Establish Baseline Performance**:
-    -   Run the clean CelebA test set through all three integrated baseline models:
-        -   FaceNet: Record face detection rates and potentially average embedding distances for known identities (if identity labels are used).
-        -   Attribute Classifier: Record baseline accuracy for selected attributes.
-        -   InstructPix2Pix: Apply standard edits and calculate baseline image similarity metrics (SSIM, PSNR, LPIPS using `piq`) between original and edited images.
-    -   Store these baseline results for later comparison with protected images.
+    -   **Goal**: Obtain a model that can predict facial attributes (e.g., `Smiling`, `Male`, `Eyeglasses`). This model will act as the **evaluation tool** for our "Feature Preservation" objective.
+    -   **Task**: Find a pre-trained model or train a simple classifier using `CelebADataset` and `list_attr_celeba.csv`. Create a wrapper (e.g., `models/attribute_classifier/classifier_wrapper.py`).
+2.  **Establish Baseline Performance**: 
+    -   **Goal**: Quantify the performance of the *unprotected* data on the three baseline models.
+    -   **Task**: Run the clean CelebA test set through FaceNet (measure detection/recognition), InstructPix2Pix (measure edit impact via SSIM/LPIPS), and the Attribute Classifier (measure attribute prediction accuracy). Store these results as the benchmark.
+
+**Following Phase 1:**
+
+3.  **Phase 2: Implement Protection Methods**: 
+    -   **Goal**: Develop the core perturbation generation algorithms.
+    -   **Task**: Implement individual attacks (FaceLock-like, EditShield-like) and the proposed unified multi-objective attack based on PGD.
+4.  **Phase 3: Evaluation and Analysis**: 
+    -   **Goal**: Assess how well the developed protection methods achieve the project's three main goals compared to the baseline.
+    -   **Task**: Apply protections to the test set, re-evaluate using the baseline models and metrics, analyze trade-offs, and draw conclusions.
 
 ## Getting Started
 
@@ -83,8 +98,8 @@ diffusion_immunity/
 
 *(Tracking progress based on the implementation plan phases)*
 
-- [X] Phase 1: Setup and Baselines (Partially Complete: Environment, Data, FaceNet, InstructPix2Pix Integrated)
-- [ ] Phase 1: Setup and Baselines (Remaining: Attribute Classifier Integration, Baseline Evaluation)
+- [X] Phase 1: Setup and Baselines (Part 1: Environment, Data, FaceNet, InstructPix2Pix Integrated)
+- [ ] Phase 1: Setup and Baselines (Part 2: Attribute Classifier Integration, Baseline Evaluation)
 - [ ] Phase 2: Implementation of Protection Methods
 - [ ] Phase 3: Evaluation and Analysis
 
