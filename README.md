@@ -1,93 +1,122 @@
-# Diffusion Immunity: Project Implementation
-
-This repository contains the implementation for the CSCI 5527 project: "Diffusion Immunity: Semantic and Biometric Attacks for Image Data Protection".
+# Diffusion Immunity: Semantic and Biometric Attacks for Image Data Protection
 
 ## Goal
 
-The primary goal is to develop and evaluate a method to add imperceptible perturbations to images, particularly medical dermatology images, which achieve the following simultaneously:
+The primary goal is to develop and evaluate a method to add subtle perturbations to facial images (especially those with features like simulated lesions) to achieve the following simultaneously:
 
-1.  **Biometric Anonymization**: Degrade or prevent face detection and recognition.
-2.  **Semantic Editing Resistance**: Resist unwanted edits by text-to-image diffusion models (e.g., InstructPix2Pix).
-3.  **Diagnostic Feature Preservation**: Maintain the essential features needed for medical diagnosis (e.g., skin disease classification).
+1.  **Biometric Anonymization**: Disrupt face detection and recognition models (e.g., FaceNet).
+2.  **Semantic Editing Resistance**: Hinder unwanted edits by text-to-image diffusion models (e.g., InstructPix2Pix).
+3.  **Feature Preservation**: Maintain the essential visual characteristics, particularly the simulated lesions.
 
 ## Approach
 
-We plan to implement a unified optimization pipeline (based on Projected Gradient Descent - PGD) that combines objectives targeting face recognition models and diffusion model editing mechanisms, constrained by feature preservation and perturbation imperceptibility.
-
-## Current Progress & Implementation Details (Phase 1)
-
--   **Environment Setup**:
-    -   Initialized a Python virtual environment (`venv`).
-    -   Installed core dependencies via `pip install -r requirements.txt`, including `torch`, `torchvision`, `diffusers`, `transformers`, `opencv-python`, `pandas`, `piq`, `facenet-pytorch`, and `kagglehub`.
--   **Dataset Acquisition & Preparation**:
-    -   Switched dataset direction to CelebA due to the need for facial images.
-    -   Downloaded the CelebA dataset (`google/celeba`) using `kagglehub` via `scripts/download_celeba.py` into `data/raw/celeba-dataset/archive/`.
-    -   Created a PyTorch Dataset loader (`data/celeba_dataset.py`) capable of:
-        -   Parsing CelebA's CSV annotation files (`list_eval_partition.csv`, `list_attr_celeba.csv`).
-        -   Loading images from the nested `img_align_celeba/img_align_celeba/` directory.
-        -   Partitioning data into train/validation/test sets.
-        -   Loading selected facial attributes.
-        -   Applying standard image transformations.
--   **Baseline Model Integration**:
-    -   **Face Detection/Recognition**: Implemented `models/face_recognition/facenet_wrapper.py` using `facenet-pytorch`. This wrapper loads a pre-trained MTCNN for detection and InceptionResnetV1 (VGGFace2 weights) for extracting 512-d face embeddings. Includes methods for detection, extraction, and distance calculation. Tested successfully.
-    -   **Image Editing Model**: Implemented `models/diffusion/instruct_pix2pix_wrapper.py` using `diffusers`. This wrapper loads the `timbrooks/instruct-pix2pix` pipeline and provides a method to apply text-based edits to images. Tested successfully, saving example outputs.
+We utilize ControlNet (specifically with segmentation maps) to generate a synthetic dataset of faces with simulated lesions. This dataset serves as the foundation for developing and evaluating a unified optimization pipeline (likely PGD-based) that balances the three goals mentioned above.
 
 ## Project Structure
 
-A high-level overview of the intended project structure:
-
 ```
-diffusion_immunity/
-├── configs/              # Configuration files for models and experiments
-├── data/                 # Data loading, preprocessing, and storage
-│   ├── raw/celeba-dataset/archive/ # Raw CelebA files
-│   └── celeba_dataset.py      # Dataset loader class
-├── evaluation/           # Evaluation metrics, scripts, and results storage
-├── models/               # Baseline models (Face, Diffusion, Diagnosis/Attribute)
-│   ├── face_recognition/facenet_wrapper.py # FaceNet integration
-│   └── diffusion/instruct_pix2pix_wrapper.py # InstructPix2Pix integration
-├── protection_methods/   # Implementation of protection techniques (FaceLock, EditShield, Unified)
-├── notebooks/            # Experimental notebooks
-├── output/               # Directory for generated outputs (e.g., edited images)
-├── scripts/              # Main runnable scripts (download, training, evaluation, perturbation)
-│   └── download_celeba.py   # Script to download dataset
-├── utils/                # Utility functions
-├── requirements.txt      # Project dependencies
-└── README.md             # This file
+project/
+├── data/
+│   ├── celeba/                     # Optional: Original CelebA dataset root
+│   ├── synthetic_raw/
+│   │   └── base_faces/            # Preprocessed base face images (e.g., 512x512 from CelebA)
+│   │       └── _prepared_ids.txt  # List of processed image IDs
+│   ├── masks/
+│   │   └── lesion_segmentation_maps/  # Generated segmentation masks for ControlNet
+│   └── synthetic_lesion/          # Output directory for synthetic images with lesions
+├── models/                       # Wrappers for baseline models (placeholders if not created yet)
+│   ├── face_recognition/facenet_wrapper.py # FaceNet integration (assuming exists)
+│   └── diffusion/instruct_pix2pix_wrapper.py # InstructPix2Pix integration (assuming exists)
+├── scripts/
+│   ├── prepare_base_faces.py      # Script for preparing and resizing base faces
+│   ├── generate_lesion_masks.py   # Script for generating lesion segmentation masks
+│   └── generate_synthetic_data.py # Script for generating synthetic images using ControlNet
+├── venv/                          # Python virtual environment
+├── .gitignore                     # Git ignore configuration
+├── README.md                      # This file
+└── requirements.txt               # Project dependencies
 ```
-*(Structure will evolve as project progresses)*
 
-## Next Steps (Completing Phase 1)
+## Current Progress
 
-1.  **Integrate Baseline Model 3 (Face Attribute Classifier)**:
-    -   Decide on specific attributes from CelebA to preserve (e.g., `Smiling`, `Male`, `Eyeglasses`, `Young`).
-    -   Find a suitable pre-trained multi-attribute classifier OR train a simple baseline classifier (e.g., using ResNet on top of the loaded CelebA data and selected attributes from `list_attr_celeba.csv`).
-    -   Create a wrapper script similar to the others (e.g., `models/attribute_classifier/classifier_wrapper.py`).
-2.  **Establish Baseline Performance**:
-    -   Run the clean CelebA test set through all three integrated baseline models:
-        -   FaceNet: Record face detection rates and potentially average embedding distances for known identities (if identity labels are used).
-        -   Attribute Classifier: Record baseline accuracy for selected attributes.
-        -   InstructPix2Pix: Apply standard edits and calculate baseline image similarity metrics (SSIM, PSNR, LPIPS using `piq`) between original and edited images.
-    -   Store these baseline results for later comparison with protected images.
+*   ✅ **Environment Setup:** Python `venv` created; core libraries installed (`torch`, `diffusers`, `controlnet_aux`, `opencv-python`, `Pillow`, `tqdm`, etc.) via `requirements.txt`.
+*   ✅ **Baseline Model Integration:** FaceNet and InstructPix2Pix wrappers implemented and tested (assuming `models/` directory structure).
+*   ✅ **Synthetic Data Generation Pipeline (Phase 1 Complete):**
+    *   Developed script (`prepare_base_faces.py`) to prepare base face images (resized 512x512).
+    *   Developed script (`generate_lesion_masks.py`) to create corresponding segmentation masks for lesions.
+    *   Developed script (`generate_synthetic_data.py`) using ControlNet (Segmentation model) to generate composite images.
+    *   Successfully generated an initial batch of base faces, masks, and synthetic images.
+*   ✅ **Version Control:** Project history tracked with Git; recent code, scripts, and initial data pushed to GitHub.
 
-## Getting Started
+## Next Steps (Phase 2: Validation & Baseline Establishment)
 
-1.  Clone the repository.
-2.  Create a Python virtual environment: `python3 -m venv venv`
-3.  Activate the environment: `source venv/bin/activate` (or `.\venv\Scripts\activate` on Windows)
-4.  Install dependencies: `pip install -r requirements.txt`
-5.  Configure Kaggle API credentials (see Kaggle website and `scripts/download_celeba.py` comments).
-6.  Download the dataset: `python scripts/download_celeba.py`
+1.  **Full Synthetic Dataset Generation:**
+    *   Run `scripts/generate_synthetic_data.py` (adjust `MAX_IMAGES_TO_PROCESS` to `-1`) to generate images for all prepared base faces/masks.
+    *   Monitor resource usage (VRAM/RAM, time).
+2.  **Data Validation:**
+    *   Visually inspect the full set of generated images in `data/synthetic_lesion/` for quality, realism, and diversity.
+    *   Evaluate how accurately the generated lesions correspond to the input segmentation masks.
+3.  **Establish Baselines on Synthetic Data:**
+    *   Run FaceNet (`models/face_recognition/facenet_wrapper.py`) on the *clean* base faces (`data/synthetic_raw/base_faces/`) and the generated *synthetic lesion* images (`data/synthetic_lesion/`) to get baseline recognition performance and assess initial impact of lesions.
+    *   Apply standard edits using InstructPix2Pix (`models/diffusion/instruct_pix2pix_wrapper.py`) to the synthetic lesion images to establish baseline editability *before* protection.
+    *   *(Optional)* Develop quantitative metrics to assess lesion presence/quality in the generated images.
+4.  **Refinement (If Necessary):** Based on validation and baseline results, potentially adjust ControlNet parameters (prompt, strength, steps), mask generation logic, or base faces, and regenerate data.
 
-## Development Status
+## Setup & Installation
 
-*(Tracking progress based on the REVISED implementation plan)*
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/li003454/dl_project.git
+    cd project
+    ```
+2.  Create and activate virtual environment:
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Linux/macOS
+    # venv\Scripts\activate  # On Windows
+    ```
+3.  Install dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
+4.  Prepare Environment:
+    *   Ensure sufficient disk space for data.
+    *   A CUDA-enabled GPU is highly recommended for reasonable generation times.
 
-- [X] Phase 1: Setup and Baselines (Partially Complete: Environment, Data, FaceNet, InstructPix2Pix Integrated)
-- [ ] Phase 1: Setup and Baselines (Remaining: Attribute Classifier Integration, Baseline Evaluation)
-- [ ] Phase 2: Implementation of Protection Methods
-- [ ] Phase 3: Evaluation and Analysis
+## Usage: Generating Synthetic Data
 
----
+*(Run these scripts sequentially after setup)*
 
-*This README reflects the updated project direction focusing on synthetic data generation.* 
+1.  **Prepare Base Faces (if not already done):**
+    *   *(Optional)* Place original CelebA data appropriately or modify the script if using a different source.
+    *   Run:
+        ```bash
+        python scripts/prepare_base_faces.py
+        ```
+    *   Output: Resized images in `data/synthetic_raw/base_faces/`.
+
+2.  **Generate Lesion Masks (if not already done):**
+    *   Run:
+        ```bash
+        python scripts/generate_lesion_masks.py
+        ```
+    *   Output: Segmentation masks in `data/masks/lesion_segmentation_maps/`.
+
+3.  **Generate Synthetic Images:**
+    *   *(First Run / Test)*: Check `MAX_IMAGES_TO_PROCESS` in the script (default is low). Run:
+        ```bash
+        python scripts/generate_synthetic_data.py
+        ```
+    *   *(Full Run)*: Modify `MAX_IMAGES_TO_PROCESS = -1` in `scripts/generate_synthetic_data.py`. Ensure you have time and resources. Run:
+        ```bash
+        python scripts/generate_synthetic_data.py
+        ```
+    *   Output: Final images with lesions in `data/synthetic_lesion/`. This step downloads models on the first run and requires significant computation.
+
+## Contributing
+
+This is a research project. Please open an issue to discuss major changes or contributions.
+
+## License
+
+[MIT](https://choosealicense.com/licenses/mit/) (Assumed, please update if different) 
