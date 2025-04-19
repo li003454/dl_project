@@ -19,6 +19,9 @@ piq
 # Kaggle Interaction
 kagglehub
 
+# ControlNet Auxiliary Models (for preprocessing)
+controlnet_aux
+
 # Optional (Consider adding if needed for specific models/tasks)
 facenet-pytorch  # For FaceNet face recognition
 # timm             # For using various vision models (like EfficientNet) 
