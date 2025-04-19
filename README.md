@@ -4,65 +4,73 @@ This repository contains the implementation for the CSCI 5527 project: "Diffusio
 
 ## Goal
 
-The primary goal is to develop and evaluate a method to add imperceptible perturbations to images containing faces, which achieve the following simultaneously:
+The primary goal is to develop and evaluate a method to add imperceptible perturbations to images, particularly medical dermatology images, which achieve the following simultaneously:
 
 1.  **Biometric Anonymization**: Degrade or prevent face detection and recognition.
 2.  **Semantic Editing Resistance**: Resist unwanted edits by text-to-image diffusion models (e.g., InstructPix2Pix).
-3.  **Feature Preservation**: Maintain the visual integrity and key characteristics of specific regions of interest, simulated here as **artificial skin lesions** on faces, analogous to preserving diagnostic features in medical contexts.
+3.  **Diagnostic Feature Preservation**: Maintain the essential features needed for medical diagnosis (e.g., skin disease classification).
 
 ## Approach
 
-We aim to implement a unified optimization pipeline (likely based on Projected Gradient Descent - PGD). This pipeline will generate subtle perturbations by optimizing a loss function that combines objectives for biometric anonymization (attacking face recognition models) and semantic editing resistance (disrupting diffusion editing models), while being constrained to preserve key features (simulated lesions) and maintain overall visual quality. A core part of this approach now involves **generating a synthetic dataset** of faces with simulated lesions to provide relevant data for development and evaluation.
+We plan to implement a unified optimization pipeline (based on Projected Gradient Descent - PGD) that combines objectives targeting face recognition models and diffusion model editing mechanisms, constrained by feature preservation and perturbation imperceptibility.
 
-## Current Progress
+## Current Progress & Implementation Details (Phase 1)
 
-*   ✅ **Environment Setup:** Anaconda environment created, necessary libraries installed (`torch`, `torchvision`, `diffusers`, `transformers`, `accelerate`, `controlnet_aux`, `opencv-python`, `Pillow`, `tqdm`).
-*   ✅ **Data Exploration & Preparation:** Explored CelebA dataset structure.
-*   ✅ **Baseline Model Integration:**
-    *   FaceNet (Biometric Recognition) - Integrated for embedding extraction.
-    *   InstructPix2Pix (Image Editing) - Integrated for image manipulation.
-*   ✅ **Version Control:** Git repository initialized, `.gitignore` configured, project pushed to GitHub.
-*   ✅ **Synthetic Data Generation (Phase 1 - Scripting Complete):**
-    *   **Base Face Preparation:** Script `scripts/prepare_base_faces.py` created to select and preprocess base images (e.g., from CelebA) and save them to `data/synthetic_raw/base_faces/`. Base faces generated.
-    *   **Simulated Lesion Masks:** Script `scripts/generate_lesion_masks.py` created to generate segmentation map masks for lesions and save them to `data/masks/lesion_segmentation_maps/`. Masks generated.
-    *   **ControlNet Synthesis Script:** Script `scripts/generate_synthetic_data.py` created using ControlNet (Segmentation model) to generate final synthetic images with lesions based on base faces and masks, saved to `data/synthetic_lesion/`. Initial test images generated.
-
-## Next Steps (Phase 2: Validation & Baseline)
-
-1.  **Full Synthetic Data Generation:** Run `scripts/generate_synthetic_data.py` to generate the complete set of synthetic images with lesions.
-2.  **Data Validation:**
-    *   Visually inspect generated images for quality, realism, and diversity.
-    *   Evaluate how well the specified lesions (from segmentation maps) are represented in the final images.
-    *   Quantify diversity if necessary (e.g., attribute distribution if using CelebA base faces).
-3.  **Establish Baselines on Synthetic Data:**
-    *   Run FaceNet on the generated synthetic images (with lesions) to establish a baseline biometric recognition performance.
-    *   Apply InstructPix2Pix (or other editing methods) to the synthetic images to understand baseline editability *before* applying protection.
-    *   *(Future)* Integrate and test the facial attribute classifier on the synthetic data.
-4.  **Refine Generation (If Necessary):** Based on validation results, potentially adjust prompts, ControlNet parameters, or mask generation logic and regenerate data.
+-   **Environment Setup**:
+    -   Initialized a Python virtual environment (`venv`).
+    -   Installed core dependencies via `pip install -r requirements.txt`, including `torch`, `torchvision`, `diffusers`, `transformers`, `opencv-python`, `pandas`, `piq`, `facenet-pytorch`, and `kagglehub`.
+-   **Dataset Acquisition & Preparation**:
+    -   Switched dataset direction to CelebA due to the need for facial images.
+    -   Downloaded the CelebA dataset (`google/celeba`) using `kagglehub` via `scripts/download_celeba.py` into `data/raw/celeba-dataset/archive/`.
+    -   Created a PyTorch Dataset loader (`data/celeba_dataset.py`) capable of:
+        -   Parsing CelebA's CSV annotation files (`list_eval_partition.csv`, `list_attr_celeba.csv`).
+        -   Loading images from the nested `img_align_celeba/img_align_celeba/` directory.
+        -   Partitioning data into train/validation/test sets.
+        -   Loading selected facial attributes.
+        -   Applying standard image transformations.
+-   **Baseline Model Integration**:
+    -   **Face Detection/Recognition**: Implemented `models/face_recognition/facenet_wrapper.py` using `facenet-pytorch`. This wrapper loads a pre-trained MTCNN for detection and InceptionResnetV1 (VGGFace2 weights) for extracting 512-d face embeddings. Includes methods for detection, extraction, and distance calculation. Tested successfully.
+    -   **Image Editing Model**: Implemented `models/diffusion/instruct_pix2pix_wrapper.py` using `diffusers`. This wrapper loads the `timbrooks/instruct-pix2pix` pipeline and provides a method to apply text-based edits to images. Tested successfully, saving example outputs.
 
 ## Project Structure
 
-```
-project/
-├── data/
-│   ├── celeba/             # CelebA dataset root (placeholder for original data location)
-│   ├── synthetic_raw/
-│   │   └── base_faces/     # Resized base faces (e.g., from CelebA)
-│   │       └── _prepared_ids.txt # List of prepared base face IDs
-│   ├── masks/
-│   │   └── lesion_segmentation_maps/ # Generated segmentation masks (ControlNet input)
-│   └── synthetic_lesion/   # Output directory for generated images with lesions
-├── scripts/
-│   ├── prepare_base_faces.py       # Script to prepare base face images
-│   ├── generate_lesion_masks.py    # Script to generate lesion segmentation maps
-│   └── generate_synthetic_data.py  # Script to generate final images using ControlNet
-├── venv/                   # Virtual environment directory
-├── .gitignore              # Specifies intentionally untracked files
-├── README.md               # This file
-└── requirements.txt        # Project dependencies
-```
+A high-level overview of the intended project structure:
 
-## Setup & Installation
+```
+diffusion_immunity/
+├── configs/              # Configuration files for models and experiments
+├── data/                 # Data loading, preprocessing, and storage
+│   ├── raw/celeba-dataset/archive/ # Raw CelebA files
+│   └── celeba_dataset.py      # Dataset loader class
+├── evaluation/           # Evaluation metrics, scripts, and results storage
+├── models/               # Baseline models (Face, Diffusion, Diagnosis/Attribute)
+│   ├── face_recognition/facenet_wrapper.py # FaceNet integration
+│   └── diffusion/instruct_pix2pix_wrapper.py # InstructPix2Pix integration
+├── protection_methods/   # Implementation of protection techniques (FaceLock, EditShield, Unified)
+├── notebooks/            # Experimental notebooks
+├── output/               # Directory for generated outputs (e.g., edited images)
+├── scripts/              # Main runnable scripts (download, training, evaluation, perturbation)
+│   └── download_celeba.py   # Script to download dataset
+├── utils/                # Utility functions
+├── requirements.txt      # Project dependencies
+└── README.md             # This file
+```
+*(Structure will evolve as project progresses)*
+
+## Next Steps (Completing Phase 1)
+
+1.  **Integrate Baseline Model 3 (Face Attribute Classifier)**:
+    -   Decide on specific attributes from CelebA to preserve (e.g., `Smiling`, `Male`, `Eyeglasses`, `Young`).
+    -   Find a suitable pre-trained multi-attribute classifier OR train a simple baseline classifier (e.g., using ResNet on top of the loaded CelebA data and selected attributes from `list_attr_celeba.csv`).
+    -   Create a wrapper script similar to the others (e.g., `models/attribute_classifier/classifier_wrapper.py`).
+2.  **Establish Baseline Performance**:
+    -   Run the clean CelebA test set through all three integrated baseline models:
+        -   FaceNet: Record face detection rates and potentially average embedding distances for known identities (if identity labels are used).
+        -   Attribute Classifier: Record baseline accuracy for selected attributes.
+        -   InstructPix2Pix: Apply standard edits and calculate baseline image similarity metrics (SSIM, PSNR, LPIPS using `piq`) between original and edited images.
+    -   Store these baseline results for later comparison with protected images.
+
+## Getting Started
 
 1.  Clone the repository.
 2.  Create a Python virtual environment: `python3 -m venv venv`
@@ -75,13 +83,8 @@ project/
 
 *(Tracking progress based on the REVISED implementation plan)*
 
-- [X] Initial Setup (Environment, Git, Initial Baselines - FaceNet, InstructPix2Pix)
-- [ ] **Revised Phase 1: Synthetic Data Generation & Baselines** (In Progress)
-    - [ ] Tech Selection & Setup
-    - [ ] Base Face Preparation
-    - [ ] Lesion Design & Mask Generation
-    - [ ] Synthetic Image Generation Implementation
-    - [ ] Data Validation & Lesion Baseline
+- [X] Phase 1: Setup and Baselines (Partially Complete: Environment, Data, FaceNet, InstructPix2Pix Integrated)
+- [ ] Phase 1: Setup and Baselines (Remaining: Attribute Classifier Integration, Baseline Evaluation)
 - [ ] Phase 2: Implementation of Protection Methods
 - [ ] Phase 3: Evaluation and Analysis
 
