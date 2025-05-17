@@ -87,8 +87,9 @@ This project implements and evaluates the following:
 
 ## Dataset
 
-*   Our experiments use a dataset curated for face gender classification, derived from the **CelebA** or **CelebAMask-HQ** collection. The `data/celeba_dataset.py` script provides a PyTorch `Dataset` class for loading CelebA data, assuming a specific directory structure with attribute files.
-*   The `models/gender_classification_resnet_colab.py` script details the training process for the ResNet50 model, including data paths like `CelebA_HQ_face_gender_dataset/train` and `CelebA_HQ_face_gender_dataset_test_1000`.
+*   Our experiments use a dataset curated for face gender classification, derived from the **CelebA** or **CelebAMask-HQ** collection. The specific dataset used is the **Celeb-HQ Face Gender Recognition Dataset**, which can be found here: [Celeb-HQ Face Gender Recognition Dataset on PapersWithCode](https://paperswithcode.com/dataset/celeb-hq-face-gender-recognition-dataset).
+*   The `data/celeba_dataset.py` script provides a PyTorch `Dataset` class for loading CelebA data, assuming a specific directory structure with attribute files, and can be adapted for this dataset.
+*   The `models/gender_classification_resnet_colab.py` script details the training process for the ResNet50 model, including data paths like `CelebA_HQ_face_gender_dataset/train` and `CelebA_HQ_face_gender_dataset_test_1000` (which correspond to the linked dataset's splits: 23,999 train images and 6,001 test images).
 *   **Preprocessing:** Images are typically resized to $512 \times 512$ pixels, converted to tensors, and normalized (e.g., to `[-1,1]`). Training data might be augmented with random horizontal flips. Refer to `models/gender_classification_resnet_colab.py` for specific transforms.
 
 ## Usage
