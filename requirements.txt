@@ -1,27 +1,43 @@
-torch
-torchvision
+# Deep Learning Frameworks
+torch>=1.12.0
+torchvision>=0.13.0
 
 # Hugging Face Libraries
-diffusers
-transformers
-accelerate
+diffusers>=0.20.0
+transformers>=4.28.0
+accelerate>=0.19.0
+huggingface-hub>=0.16.0
 
-# Computer Vision & Numerics
-opencv-python
-numpy
-matplotlib
-pandas
+# Computer Vision & Image Processing
+opencv-python>=4.7.0
+numpy>=1.23.5
+pillow>=9.4.0
+piq>=0.7.0  # Image quality assessment
+scikit-image>=0.19.3  # Used for image processing
 
-# Evaluation
-scikit-learn
-piq
+# Data Processing
+pandas>=1.5.3
+tqdm>=4.65.0
+scikit-learn>=1.2.2
 
-# Kaggle Interaction
-kagglehub
+# Visualization
+matplotlib>=3.7.0
+ipython>=8.10.0  # For Jupyter notebook support
 
-# ControlNet Auxiliary Models (for preprocessing)
-controlnet_aux
+# Experiment Tracking
+comet-ml>=3.33.0
+
+# Network and API Tools
+requests>=2.28.2
+
+# Face Recognition
+facenet-pytorch>=2.5.2
+
+# Kaggle Integration
+kagglehub>=0.2.0
+
+# ControlNet Tools
+controlnet_aux>=0.0.6
 
 # Optional (Consider adding if needed for specific models/tasks)
-facenet-pytorch  # For FaceNet face recognition
-# timm             # For using various vision models (like EfficientNet) 
+# timm>=0.6.12         # For using various vision models (like EfficientNet) 

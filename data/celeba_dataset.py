@@ -1,3 +1,5 @@
+# This file is designed for CelebA dataset, however, it should be further processed to adapt the project
+# The data here is used for training our classifier
 import os
 import pandas as pd
 from PIL import Image
